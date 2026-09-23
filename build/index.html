@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10172b" />
+    <meta name="description" content="A playful pitch game for practicing do re mi fa so la ti do." />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon-BTNT65JU.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>Tone Hitting — sing through the gates</title>
+    <script type="module" crossorigin src="./assets/index-CSHxFPjv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bd0M12T7.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Tone Hitting home">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span>TONE HITTING</span>
+        </a>
+        <div class="topbar-note"><span class="live-dot"></span><span id="connection-label">MIC READY</span></div>
+      </header>
+
+      <section class="intro-row" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">PITCH ARCADE / C MAJOR</p>
+          <h1 id="app-title">Sing through<br /><em>the rising gates.</em></h1>
+        </div>
+        <p class="intro-copy">Keep the ball in the cut-out as each gate slides toward you. One voice, one note, one clean flight.</p>
+      </section>
+
+      <section class="game-card" aria-label="Tone Hitting game">
+        <div class="game-header">
+          <div class="target-wrap">
+            <span class="small-label">NEXT TARGET</span>
+            <div class="target-note"><span id="target-solfege">DO</span><span class="target-pitch" id="target-frequency">C3 · 131 Hz</span></div>
+          </div>
+          <div class="stats" aria-live="polite">
+            <div><span class="small-label">GATES CLEARED</span><strong id="score">0</strong></div>
+            <div><span class="small-label">BEST RUN</span><strong id="best-score">0</strong></div>
+          </div>
+          <button class="reset-button" id="reset-button" type="button" aria-label="Reset game">↻ <span>RESET</span></button>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="game-canvas" aria-label="Game field. Your pitch controls the ball's height."></canvas>
+          <div class="canvas-hint" id="canvas-hint"><span class="hint-icon">◉</span> Press start, then sing the target note</div>
+          <div class="status-pill" id="status-pill"><span class="status-dot"></span><span id="status-text">WAITING FOR YOU</span></div>
+        </div>
+
+        <div class="pitch-strip">
+          <div class="pitch-meter">
+            <div class="meter-label"><span class="small-label">YOUR PITCH</span><span id="pitch-readout">—</span></div>
+            <div class="meter-track" aria-hidden="true"><div class="meter-center"></div><div class="meter-fill" id="meter-fill"></div><div class="meter-marker" id="meter-marker"></div></div>
+            <div class="meter-ticks"><span>LOW</span><span>IN TUNE</span><span>HIGH</span></div>
+          </div>
+          <div class="pitch-detail"><span class="small-label">DISTANCE</span><strong id="cents-readout">—</strong><span class="muted" id="pitch-note">Sing to begin</span></div>
+        </div>
+
+        <div class="practice-tools">
+          <label class="range-control" for="range-select"><span class="small-label">VOICE RANGE</span><select id="range-select"><option value="lower">LOWER · C3—C4</option><option value="higher">HIGHER · C4—C5</option></select></label>
+          <button class="hear-button" id="hear-button" type="button"><span class="button-icon">♪</span><span id="hear-label">HEAR TARGET</span></button>
+          <details class="diagnostics"><summary>MIC DETAILS</summary><div class="diagnostics-body"><span>INPUT <strong id="mic-device">Waiting for permission</strong></span><span>CLARITY <strong id="clarity-readout">—</strong></span><span>ROOM NOISE <strong id="noise-readout">—</strong></span><span>ANALYSIS <strong id="analysis-readout">—</strong></span></div></details>
+        </div>
+      </section>
+
+      <section class="controls-row" aria-label="Game controls">
+        <button class="primary-button" id="start-button" type="button"><span class="button-icon">◉</span><span id="start-label">START WITH MICROPHONE</span></button>
+        <button class="secondary-button" id="demo-button" type="button"><span class="button-icon">▷</span><span id="demo-label">TRY DEMO MODE</span></button>
+        <p class="support-note" id="support-note">Use headphones if your room is echo-y.</p>
+      </section>
+
+      <section class="calibration-panel" id="calibration-panel" hidden aria-live="polite">
+        <div class="calibration-copy"><span class="small-label" id="calibration-title">QUIET ROOM CHECK</span><p id="calibration-message">Stay quiet for a moment so the game can hear your voice.</p></div>
+        <div class="calibration-meter"><div id="calibration-fill"></div></div>
+      </section>
+
+      <section class="completion-panel" id="completion-panel" hidden aria-live="polite">
+        <span class="completion-kicker">SCALE COMPLETE</span><strong>You cleared every gate.</strong><button class="secondary-button" id="replay-button" type="button">PLAY AGAIN</button>
+      </section>
+
+      <footer class="bottom-row">
+        <div class="legend"><span><i class="legend-ball"></i> YOUR VOICE</span><span><i class="legend-gate"></i> NOTE GATE</span></div>
+        <p>DO → RE → MI → FA → SO → LA → TI → DO</p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "tone-hitting",
+  "version": "1.0.0",
+  "description": "Tone Hitting is a tiny browser ear-training game for practicing the C-major solfege scale. Sing the highlighted note and your live pitch moves the ball vertically. Clear each gate by holding the right pitch as it slides across the screen.",
+  "private": true,
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "vite --host localhost --port 4173",
+    "build": "vite build",
+    "preview": "vite preview --host localhost --port 4174",
+    "test": "node --test"
+  },
+  "keywords": ["pitch", "singing", "ear-training"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pitchy": "4.1.0",
+    "vite": "8.3.0"
+  }
+}
