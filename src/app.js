@@ -118,6 +118,7 @@ function resetRound({ keepMic = true } = {}) {
     connectionLabel.textContent = 'MIC READY';
     startLabel.textContent = 'START WITH MICROPHONE';
     demoLabel.textContent = 'TRY DEMO MODE';
+    supportNote.textContent = 'Sing the highlighted note and hold it through the gate.';
     canvasHint.style.opacity = '1';
     setStatus('WAITING FOR YOU');
   } else if (state.mode === 'mic') {
