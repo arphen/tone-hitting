@@ -28,6 +28,9 @@ export async function openMicrophone({ onFrame, onState, signal } = {}) {
     const samples = new Float32Array(analyser.fftSize);
     const track = stream.getAudioTracks()[0];
     const settings = track?.getSettings?.() || {};
+    track?.addEventListener?.('ended', () => {
+      if (!stopped) onState?.({ type: 'ended' });
+    });
     onState?.({ type: 'ready', deviceLabel: track?.label || 'MacBook microphone', settings, contextState: context.state });
     let lastAnalysisAt = -Infinity;
     const frame = (timestamp) => {
@@ -45,7 +48,7 @@ export async function openMicrophone({ onFrame, onState, signal } = {}) {
     if (stream) stopTracks(stream);
     await context?.close?.();
     if (error instanceof MicrophoneError) throw error;
-    const code = error?.name === 'NotAllowedError' ? 'permission' : error?.name === 'NotFoundError' ? 'device' : error?.name === 'NotReadableError' ? 'busy' : 'unknown';
+    const code = error?.name === 'NotAllowedError' ? 'permission' : error?.name === 'NotFoundError' ? 'device' : error?.name === 'NotReadableError' ? 'busy' : error?.name === 'InvalidStateError' ? 'suspended' : 'unknown';
     throw new MicrophoneError(code, microphoneMessage(code), error);
   }
 
@@ -64,5 +67,5 @@ export async function openMicrophone({ onFrame, onState, signal } = {}) {
 function stopTracks(stream) { stream?.getTracks?.().forEach((track) => track.stop()); }
 
 function microphoneMessage(code) {
-  return { permission: 'Microphone access was blocked. Allow it for this site, then try again.', device: 'No microphone was found. Check the MacBook input in System Settings.', busy: 'The microphone is already in use by another app.', unknown: 'The microphone could not be started. Try again.' }[code] || 'The microphone could not be started.';
+  return { permission: 'Microphone access was blocked. Allow it for this site, then try again.', device: 'No microphone was found. Check the MacBook input in System Settings.', busy: 'The microphone is already in use by another app.', suspended: 'Audio is paused. Click Start again to resume the microphone.', unknown: 'The microphone could not be started. Try again.' }[code] || 'The microphone could not be started.';
 }

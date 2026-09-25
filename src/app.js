@@ -59,7 +59,9 @@ const state = {
   demoClock: 0,
   referencePlaying: false,
   referenceOscillator: null,
+  referenceContext: null,
   referenceTimer: null,
+  completedMode: null,
   animationFrame: null,
   lastStatus: '',
 };
@@ -106,6 +108,7 @@ function resetRound({ keepMic = true } = {}) {
   state.demoClock = 0;
   state.calibrating = false;
   state.calibrationFailed = false;
+  state.completedMode = null;
   calibrationPanel.hidden = true;
   completionPanel.hidden = true;
   scoreEl.textContent = '0';
@@ -117,6 +120,11 @@ function resetRound({ keepMic = true } = {}) {
     demoLabel.textContent = 'TRY DEMO MODE';
     canvasHint.style.opacity = '1';
     setStatus('WAITING FOR YOU');
+  } else if (state.mode === 'mic') {
+    startLabel.textContent = 'STOP MICROPHONE';
+    demoLabel.textContent = 'TRY DEMO MODE';
+    connectionLabel.textContent = 'LISTENING';
+    canvasHint.style.opacity = '0';
   }
 }
 
@@ -165,13 +173,18 @@ function handleMicFrame(frame, sessionId) {
 }
 
 async function startMicrophone() {
-  if (state.mode === 'mic') { stopCapture(); return; }
+  if (state.mode === 'mic') {
+    const shouldRetry = !state.running || state.calibrationFailed;
+    stopCapture();
+    if (!shouldRetry) return;
+  }
   if (state.mode === 'demo') stopDemo();
   stopCapture();
   const sessionId = ++state.sessionId;
   const controller = new AbortController();
   state.abortController = controller;
   state.mode = 'mic';
+  state.completedMode = null;
   state.running = true;
   state.tracker = new PitchTracker();
   state.calibrator = new NoiseCalibrator(2000);
@@ -199,6 +212,11 @@ async function startMicrophone() {
           const settings = event.settings || {};
           micDevice.title = JSON.stringify(settings);
         }
+        if (event.type === 'ended') {
+          stopCapture();
+          setStatus('MICROPHONE STOPPED', 'bad');
+          supportNote.textContent = 'The microphone became unavailable. Click Start to try again.';
+        }
       },
       onFrame: (frame) => handleMicFrame(frame, sessionId),
     });
@@ -212,6 +230,7 @@ async function startMicrophone() {
 }
 
 function stopCapture() {
+  stopReference();
   state.sessionId += 1;
   state.abortController?.abort();
   state.abortController = null;
@@ -233,6 +252,7 @@ function startDemo() {
   if (state.mode === 'demo') { stopDemo(); return; }
   stopCapture();
   state.mode = 'demo'; state.running = true; state.demoClock = 0;
+  state.completedMode = null;
   state.game.reset(); state.game.setRange(state.range); state.game.setViewport(canvas.clientWidth);
   state.latestObservation = { current: true, midi: state.game.targetMidi, clarity: 1, ageMs: 0, pitchHz: frequencyFromMidi(state.game.targetMidi) };
   state.lastDisplayMidi = state.game.targetMidi;
@@ -285,6 +305,7 @@ function playReference() {
   if (state.referencePlaying) return;
   const context = state.mic?.context || new (window.AudioContext || window.webkitAudioContext)();
   state.referencePlaying = true;
+  state.referenceContext = context;
   state.game.setPaused(true);
   state.tracker?.reset();
   hearButton.disabled = true; hearLabel.textContent = 'PLAYING NOTE'; setStatus('LISTEN TO NOTE', 'good');
@@ -300,11 +321,27 @@ function playReference() {
   state.referenceOscillator = oscillator;
   clearTimeout(state.referenceTimer);
   state.referenceTimer = setTimeout(() => {
-    state.referencePlaying = false; state.referenceOscillator = null; hearButton.disabled = false; hearLabel.textContent = 'HEAR TARGET';
+    const referenceContext = state.referenceContext;
+    state.referencePlaying = false; state.referenceOscillator = null; state.referenceContext = null; state.referenceTimer = null; hearButton.disabled = false; hearLabel.textContent = 'HEAR TARGET';
     state.tracker?.reset(); state.game.setPaused(false);
     setStatus(state.mode === 'demo' ? 'DEMO PLAYING' : `FIND ${currentTarget().solfege}`, state.mode === 'demo' ? 'good' : 'warn');
-    if (!state.mic) context.close?.();
+    if (!state.mic) referenceContext?.close?.();
   }, 1000);
+}
+
+function stopReference() {
+  clearTimeout(state.referenceTimer);
+  state.referenceTimer = null;
+  try { state.referenceOscillator?.stop?.(); } catch {}
+  state.referenceOscillator?.disconnect?.();
+  const context = state.referenceContext;
+  state.referenceOscillator = null;
+  state.referenceContext = null;
+  state.referencePlaying = false;
+  hearButton.disabled = false;
+  hearLabel.textContent = 'HEAR TARGET';
+  state.game?.setPaused(false);
+  if (context && !state.mic) context.close?.();
 }
 
 function updateGame(dtMs) {
@@ -322,9 +359,14 @@ function updateGame(dtMs) {
   bestScoreEl.textContent = state.best;
   localStorage.setItem('tone-hitting-best', String(state.best));
   if (snapshot.complete) {
+    const completedMode = state.mode;
+    state.running = false;
+    state.completedMode = completedMode;
+    if (completedMode === 'demo') stopDemo();
+    else stopCapture();
     completionPanel.hidden = false;
     setStatus('SCALE COMPLETE', 'good');
-    state.running = false;
+    supportNote.textContent = 'Nice work. Press Play Again or Start With Microphone for another run.';
   } else if (snapshot.phase === 'crossing') setStatus('GATE CLEARED', 'good');
   else if (snapshot.phase === 'holding' && snapshot.inTune) setStatus(`HOLD ${Math.round(snapshot.holdProgress * 100)}%`, 'good');
   else if (state.latestObservation.current && snapshot.cents !== null) {
@@ -414,12 +456,18 @@ function drawTargetMarker(width, height) {
   ctx.fillStyle = '#ffcf5a'; ctx.beginPath(); ctx.arc(8, y, 3, 0, Math.PI * 2); ctx.fill();
 }
 
-function closeOnPageExit() { state.mic?.stop?.(); }
+function closeOnPageExit() { stopReference(); state.mic?.stop?.(); }
 
 startButton.addEventListener('click', startMicrophone);
 demoButton.addEventListener('click', startDemo);
 resetButton.addEventListener('click', () => { stopDemo(); resetRound(); });
-replayButton.addEventListener('click', () => { resetRound(); state.running = state.mode !== 'idle'; });
+replayButton.addEventListener('click', () => {
+  const replayMode = state.completedMode;
+  resetRound();
+  if (replayMode === 'demo') startDemo();
+  else if (state.mode === 'idle') startMicrophone();
+  else state.running = true;
+});
 hearButton.addEventListener('click', playReference);
 rangeSelect.addEventListener('change', handleRangeChange);
 window.addEventListener('resize', resizeCanvas);
